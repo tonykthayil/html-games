@@ -108,6 +108,62 @@ input[type="text"] {
 @keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-10px)} }
 .back-link { display:block; text-align:center; margin-top:12px; color:#bb99ff; font-size:0.85rem; text-decoration:none; }
 .back-link:hover { color:#fff; }
+.shop-section-title { font-size:0.8rem; font-weight:700; color:#bb99ff; text-transform:uppercase; letter-spacing:1px; margin:14px 0 8px; }
+.weapon-item {
+  display:flex; align-items:center; justify-content:space-between;
+  background:#1a0a2e; border-radius:12px; padding:12px 14px; border:2px solid #4a2880; gap:8px;
+}
+.weapon-item.equipped { border-color:#ffd700; background:#1f1600; }
+.equipped-tag { font-size:0.7rem; color:#ffd700; font-weight:700; margin-top:2px; }
+.weapon-btns { display:flex; gap:6px; flex-shrink:0; }
+.equip-btn {
+  background:#2d1b4e; border:2px solid #6a2fa0; border-radius:10px;
+  color:#bb99ff; font-weight:700; padding:7px 10px; cursor:pointer; font-size:0.8rem; white-space:nowrap;
+}
+.equip-btn:hover { background:#6a2fa0; color:#fff; }
+.equip-btn.active { background:#ffd700; border-color:#ffd700; color:#1a0a2e; cursor:default; }
+.weapon-display { font-size:0.8rem; color:#ffd700; margin-top:3px; min-height:16px; }
+.wanted-poster {
+  background:#f5e6c0; border:4px solid #8b4513; border-radius:6px;
+  padding:16px; color:#3d1500; text-align:center; font-family:'Courier New',monospace;
+}
+.wanted-title { font-size:1.1rem; font-weight:900; letter-spacing:4px; margin-bottom:6px; }
+.wanted-snake-name { font-size:1.3rem; font-weight:900; margin:6px 0; }
+.tt-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; margin-top:8px; }
+.tt-cell { background:#fff8e8; border:1px solid #c4a35a; border-radius:4px; padding:4px 2px; font-size:0.78rem; text-align:center; }
+.tt-cell strong { color:#8b1a00; }
+.lore-page {
+  background:#fdf8e8; border:2px solid #c4a35a; border-radius:4px; padding:16px;
+  color:#3d2b1f; position:relative; font-family:'Courier New',monospace;
+  box-shadow:2px 2px 6px rgba(0,0,0,0.3);
+}
+.lore-header { font-size:1rem; font-weight:900; color:#8b4513; margin-bottom:2px; }
+.lore-subtitle { font-size:0.9rem; font-weight:700; color:#5a3010; margin-bottom:8px; border-bottom:1px dashed #c4a35a; padding-bottom:6px; }
+.lore-row { font-size:0.82rem; padding:3px 0; line-height:1.4; }
+.countdown-line { text-align:center; margin:12px 0 6px; color:#bb99ff; font-size:0.88rem; }
+.countdown-num { font-size:1.4rem; font-weight:900; color:#ffd700; display:block; }
+.skip-modal-overlay {
+  display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center;
+}
+.skip-modal-overlay.active { display:flex; }
+.skip-modal {
+  background:#2d1b4e; border-radius:20px; padding:28px 24px; width:340px; max-width:90vw;
+  text-align:center; border:2px solid #c471ed; box-shadow:0 0 40px rgba(200,100,255,0.4);
+}
+.unlock-choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
+.unlock-choice {
+  background:#1a0a2e; border:2px solid #6a2fa0; border-radius:10px;
+  color:#fff; font-size:1.1rem; font-weight:700; padding:11px; cursor:pointer; transition:all 0.15s;
+}
+.unlock-choice:hover:not(:disabled) { background:#6a2fa0; transform:scale(1.03); }
+.unlock-choice:disabled { cursor:default; }
+.unlock-choice.correct { background:linear-gradient(135deg,#56ab2f,#a8e063); border-color:transparent; }
+.unlock-choice.wrong   { background:linear-gradient(135deg,#f64f59,#c471ed); border-color:transparent; }
+.unlock-choice.reveal  { background:#56ab2f88; border-color:transparent; }
+.unlock-progress { font-size:0.85rem; color:#bb99ff; margin-bottom:10px; }
+.unlock-btn { background:#4a2880; border:2px solid #c471ed; border-radius:10px; color:#bb99ff; font-weight:700; padding:7px 14px; cursor:pointer; font-size:0.85rem; margin-top:10px; }
+.unlock-btn:hover { background:#6a2fa0; color:#fff; }
 </style>
 </head>
 <body>
@@ -154,7 +210,10 @@ input[type="text"] {
 
   <div class="rat-section">
     <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div class="rat-name" id="ratNameDisplay">🐀 Pepper</div>
+      <div>
+        <div class="rat-name" id="ratNameDisplay">🐀 Pepper</div>
+        <div class="weapon-display" id="weaponDisplay"></div>
+      </div>
       <div style="font-size:0.9rem;">🍕 <span id="pizzaDisplay">5</span></div>
     </div>
     <div class="hp-label" id="ratHPLabel">HP: 100/100</div>
@@ -163,14 +222,13 @@ input[type="text"] {
   </div>
 
   <div class="moves-grid" id="movesGrid">
-    <button class="move-btn" onclick="selectMove('gnaw')">🦷 Gnaw Attack<div class="move-desc">Basic attack, reliable damage</div></button>
+    <button class="move-btn" id="gnawBtn" onclick="selectMove('gnaw')">🦷 Gnaw Attack<div class="move-desc">Basic attack, reliable damage</div></button>
     <button class="move-btn" onclick="selectMove('dodge')">💨 Scurry Dodge<div class="move-desc">Dodge the snake's next attack</div></button>
-    <button class="move-btn" onclick="selectMove('squeak')">📢 Squeak Scare<div class="move-desc">Stun snake, skip their turn</div></button>
+    <button class="move-btn" id="squeakBtn" onclick="selectSqueak()">📢 Squeak Scare <span style="color:#ffd700;font-size:0.68rem;">[ONE USE]</span><div class="move-desc">Stun snake, skip their turn — once per dungeon!</div></button>
     <button class="move-btn" onclick="selectMove('whisker')">👃 Whisker Sense<div class="move-desc">Reveals the correct answer once</div></button>
-    <button class="move-btn" onclick="selectMove('pack')">🐀🐀🐀 Pack Call<div class="move-desc">Friends deal big bonus damage</div></button>
-    <button class="move-btn" onclick="selectMove('feign')">💀 Death Feign<div class="move-desc">Fully heal, but skip next turn</div></button>
+    <button class="move-btn" id="packBtn" onclick="selectMove('pack')">🐀🐀🐀 Pack Call<div class="move-desc">Friends deal big bonus damage</div></button>
+    <button class="move-btn" id="feignBtn" onclick="selectMove('feign')">💀 Death Feign<div class="move-desc">Fully heal, but skip next turn (2× per dungeon)</div></button>
   </div>
-
   <div class="question-panel" id="questionPanel">
     <div class="timer-bar-wrap"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
     <div class="question-text" id="questionText">6 × 7 = ?</div>
@@ -209,71 +267,119 @@ input[type="text"] {
   <a class="back-link" href="index.html">← Back to All Games</a>
 </div>
 
+<!-- DUNGEON GATE SCREEN -->
+<div id="dungeonGateScreen" class="screen card">
+  <div id="dungeonGateContent"></div>
+</div>
+
+<!-- RAT LORE PAGE SCREEN -->
+<div id="lorePageScreen" class="screen card">
+  <div id="lorePageContent"></div>
+</div>
+
+<!-- SNAKE TAUNT MODAL -->
+<div class="skip-modal-overlay" id="tauntModal">
+  <div class="skip-modal" style="width:380px;max-height:90vh;overflow-y:auto;">
+    <div id="tauntModalContent"></div>
+  </div>
+</div>
+
+<!-- SKIP TURN CONFIRMATION MODAL -->
+<div class="skip-modal-overlay" id="skipModal">
+  <div class="skip-modal">
+    <div style="font-size:2.5rem;margin-bottom:10px;">⚠️</div>
+    <h2 style="margin-bottom:10px;color:#ffd700;">Are you sure?</h2>
+    <p style="color:#bb99ff;line-height:1.7;margin-bottom:20px;">You only get <strong style="color:#ffd700;">ONE Squeak Scare</strong> per dungeon — use it wisely!</p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button class="btn btn-primary" onclick="confirmSkip()">Yes, skip it!</button>
+      <button class="btn btn-secondary" onclick="cancelSkip()">No, go back</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEAPON UNLOCK CHALLENGE MODAL -->
+<div class="skip-modal-overlay" id="unlockModal">
+  <div class="skip-modal" style="width:360px;">
+    <div id="unlockModalContent"></div>
+  </div>
+</div>
+
 <script>
 // ── SNAKE DATA ────────────────────────────────────────────────────────────────
+const DUNGEON_TABLES=[2,3,4,5,6,7,8,9,10,12];
+
 const SNAKES = [
   {
     id:'carl', name:'Copperhead Carl', bigEmoji:'🟡',
     hp:60, maxHP:60, atk:10,
     specialName:'Venom Bite 🟡', specialDesc:'Poison — lose 2HP/turn for 3 turns',
     specialChance:0.35,
-    applySpecial(gs){ gs.poisonTurns=3; gs.poisonDmg=2; logMsg(`🟡 Carl uses Venom Bite! ${gs.ratName} is poisoned!`,'special'); }
+    applySpecial(gs){ gs.poisonTurns=3; gs.poisonDmg=2; logMsg(`🟡 Carl uses Venom Bite! ${gs.ratName} is poisoned!`,'special'); },
+    taunt:(a,b,ans)=>`Hssss... even my VENOM knew ${a}×${b}=${ans}! Maybe the poison got to your brain first? 🟡`
   },
   {
     id:'bruno', name:'Boa Constrictor Bruno', bigEmoji:'🔵',
     hp:75, maxHP:75, atk:13,
     specialName:'Constrict 🔵', specialDesc:"Squeezed — can't dodge for 2 turns",
     specialChance:0.35,
-    applySpecial(gs){ gs.constrictTurns=2; logMsg(`🔵 Bruno Constricts ${gs.ratName}! Can't dodge for 2 turns!`,'special'); }
+    applySpecial(gs){ gs.constrictTurns=2; logMsg(`🔵 Bruno Constricts ${gs.ratName}! Can't dodge for 2 turns!`,'special'); },
+    taunt:(a,b,ans)=>`I'll SQUEEZE the maths right into you! ${a}×${b}=${ans}! How did you miss that?! 🔵`
   },
   {
     id:'marcus', name:'Mamba Marcus', bigEmoji:'⚡',
     hp:65, maxHP:65, atk:11,
     specialName:'Lightning Strike ⚡', specialDesc:'Attacks twice in one turn!',
     specialChance:0.35,
-    applySpecial(gs){ gs.doubleAttack=true; logMsg(`⚡ Marcus uses Lightning Strike — attacking TWICE!`,'special'); }
+    applySpecial(gs){ gs.doubleAttack=true; logMsg(`⚡ Marcus uses Lightning Strike — attacking TWICE!`,'special'); },
+    taunt:(a,b,ans)=>`Lightning fast and you're STILL wrong! ${a}×${b}=${ans}! I struck TWICE before you figured it out! ⚡`
   },
   {
     id:'randy', name:'Rattlesnake Randy', bigEmoji:'🎵',
     hp:70, maxHP:70, atk:12,
     specialName:'Rattle Scare 🎵', specialDesc:'Your answer timer is shorter next question',
     specialChance:0.4,
-    applySpecial(gs){ gs.shortTimer=true; logMsg(`🎵 Randy rattles! Your next timer is extra short!`,'special'); }
+    applySpecial(gs){ gs.shortTimer=true; logMsg(`🎵 Randy rattles! Your next timer is extra short!`,'special'); },
+    taunt:(a,b,ans)=>`Rattle rattle! Even my TAIL knows ${a}×${b}=${ans}! And it doesn't even have a brain! 🎵`
   },
   {
     id:'cleo', name:'Spitting Cobra Cleo', bigEmoji:'💚',
     hp:80, maxHP:80, atk:13,
     specialName:'Venom Spit 💚', specialDesc:'Answers go blurry during the next question!',
     specialChance:0.4,
-    applySpecial(gs){ gs.blurryAnswers=true; logMsg(`💚 Cleo spits venom — the answers are going blurry!`,'special'); }
+    applySpecial(gs){ gs.blurryAnswers=true; logMsg(`💚 Cleo spits venom — the answers are going blurry!`,'special'); },
+    taunt:(a,b,ans)=>`Oh darling, was the venom making things blurry? ${a}×${b}=${ans}! Even blind I'd get that right! 💚`
   },
   {
     id:'andy', name:'Anaconda Andy', bigEmoji:'🔴',
     hp:90, maxHP:90, atk:14,
     specialName:'Death Squeeze 🔴', specialDesc:'HUGE damage if you get 2 wrong in a row',
     specialChance:0,
-    applySpecial(gs){}
+    applySpecial(gs){},
+    taunt:(a,b,ans)=>`I could squeeze ${ans} out of a ROCK! ${a}×${b}=${ans}! Get it together before I squeeze YOU! 🔴`
   },
   {
     id:'tony', name:'Taipan Tony', bigEmoji:'☠️',
     hp:85, maxHP:85, atk:15,
     specialName:'Neurotoxin ☠️', specialDesc:'Scrambles the answer positions mid-question',
     specialChance:0.4,
-    applySpecial(gs){ gs.scrambleNext=true; logMsg(`☠️ Tony uses Neurotoxin — the answers are going to scramble!`,'special'); }
+    applySpecial(gs){ gs.scrambleNext=true; logMsg(`☠️ Tony uses Neurotoxin — the answers are going to scramble!`,'special'); },
+    taunt:(a,b,ans)=>`My neurotoxin scrambled your brain AND your maths! ${a}×${b}=${ans}! That's embarrassing! ☠️`
   },
   {
     id:'barry', name:'Bushmaster Barry', bigEmoji:'🕳️',
     hp:95, maxHP:95, atk:15,
     specialName:'Burrow Hide 🕳️', specialDesc:'Hides underground — answer a bonus question to lure him out',
     specialChance:0.35,
-    applySpecial(gs){ gs.burrowActive=true; logMsg(`🕳️ Barry digs underground! Answer a question to lure him out!`,'special'); }
+    applySpecial(gs){ gs.burrowActive=true; logMsg(`🕳️ Barry digs underground! Answer a question to lure him out!`,'special'); },
+    taunt:(a,b,ans)=>`I popped out from underground FASTER than you solved ${a}×${b}=${ans}! And I was DIGGING! 🕳️`
   },
   {
     id:'kevin', name:'King Cobra Kevin', bigEmoji:'👑',
     hp:100, maxHP:100, atk:16,
     specialName:'Hood Flare 👑', specialDesc:'Reduces your attack power for 2 turns',
     specialChance:0.4,
-    applySpecial(gs){ gs.attackReduced=2; logMsg(`👑 Kevin flares his hood! ${gs.ratName}'s attack is weakened!`,'special'); }
+    applySpecial(gs){ gs.attackReduced=2; logMsg(`👑 Kevin flares his hood! ${gs.ratName}'s attack is weakened!`,'special'); },
+    taunt:(a,b,ans)=>`I flared my MAGNIFICENT royal hood and you STILL got ${a}×${b}=${ans} wrong?! Absolutely DISGRACEFUL! 👑`
   },
   {
     id:'rex', name:'Titanoboa Rex', bigEmoji:'🌋',
@@ -289,7 +395,8 @@ const SNAKES = [
       if(Math.random()<0.5){ gs.attackReduced=1; efx.push('👑Weaken'); }
       if(!efx.length){ gs.shortTimer=true; efx.push('🎵Short Timer'); }
       logMsg(`🌋 ANCIENT CRUSH! ${efx.join(' ')}!`,'special');
-    }
+    },
+    taunt:(a,b,ans)=>`I am ANCIENT. I have CRUSHED mountains. I have outlived CIVILISATIONS. And ${a}×${b}=${ans} defeated you?! PATHETIC! 🌋`
   }
 ];
 
@@ -297,8 +404,30 @@ const SHOP_ITEMS=[
   {id:'juice',  name:'🧃 Juice Box',    desc:'Restores 25 HP',                  cost:3, apply(gs){gs.ratHP=Math.min(gs.ratMaxHP,gs.ratHP+25);}},
   {id:'cheese', name:'🧀 Cheese Armor', desc:'Reduces damage by 30% next battle', cost:4, apply(gs){gs.cheeseArmor=true;}},
   {id:'sugar',  name:'⚡ Sugar Rush',   desc:'Doubles attack for next battle',    cost:5, apply(gs){gs.sugarRush=true;}},
-  {id:'extra',  name:'🍕 Extra Pizza',  desc:'Gain 3 bonus pizza slices',          cost:2, apply(gs){gs.pizza+=3;}}
 ];
+
+const WEAPONS=[
+  { id:'spoon',      name:'Spoon Sword',          emoji:'🥄', desc:'+3 atk — scooping moveset',       bonus:3,  unlockCount:2,
+    moves:[{id:'spoon_slash',       name:'Spoon Slash 🥄',       desc:'Basic reliable slap damage'},
+           {id:'spoon_scoop',       name:'Spoon Scoop 🥄',       desc:'Bonus damage from HP advantage'}]},
+  { id:'clip',       name:'Paperclip Lance',       emoji:'📎', desc:'+4 atk — dual-hit piercing',      bonus:4,  unlockCount:2,
+    moves:[{id:'lance_jab',         name:'Lance Jab 📎',         desc:'Hits twice at lower damage each'},
+           {id:'clip_strike',       name:'Clip Strike 📎',       desc:'Extra damage to poisoned snakes'}]},
+  { id:'scissors',   name:'Scissors Blade',        emoji:'✂️', desc:'+5 atk — high-damage cuts',       bonus:5,  unlockCount:2,
+    moves:[{id:'scissor_snip',      name:'Scissor Snip ✂️',      desc:'High damage single hit'},
+           {id:'double_cut',        name:'Double Cut ✂️',        desc:'Two hits, second hits harder'}]},
+  { id:'needle',     name:'Sewing Needle Spear',   emoji:'🪡', desc:'+4 atk — piercing streak attacks', bonus:4, unlockCount:3,
+    moves:[{id:'needle_jab',        name:'Needle Jab 🪡',        desc:'Pierces defences, ignores attack reduction'},
+           {id:'thread_whip',       name:'Thread Whip 🪡',       desc:'Stronger with correct answer streaks'}]},
+  { id:'flashlight', name:'Flashlight Club',        emoji:'🔦', desc:'+6 atk — crushing blows',         bonus:6,  unlockCount:3,
+    moves:[{id:'flashlight_smash',  name:'Flashlight Smash 🔦',  desc:'Massive single hit damage'},
+           {id:'blind_flash',       name:'Blind Flash 🔦',       desc:'Damage + halves snake\'s next attack'}]},
+  { id:'golden',     name:'Golden Pizza Cutter',   emoji:'👑', desc:'+8 atk — legendary spinner',      bonus:8,  unlockCount:3,
+    moves:[{id:'pizza_slice',       name:'Pizza Slice 👑',       desc:'Huge damage, bonus on answer streaks'},
+           {id:'royal_spin',        name:'Royal Spin 👑',        desc:'Hits three times at medium damage'}]},
+];
+
+let uc=null; // active unlock challenge: {weaponId, required, correct, q}
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let gs={};
@@ -313,6 +442,14 @@ function initState(name){
     whiskerActive:false, deathFeignSkip:false, attackMultiplier:1,
     // shop buffs (persist between battles)
     cheeseArmor:false, sugarRush:false,
+    // weapons
+    ownedWeapons:[], equippedWeapon:null,
+    // one-time squeak scare for entire run
+    squeakUsed:false,
+    // death feign uses this dungeon (max 2)
+    feignCount:0,
+    // streak and blind tracking
+    correctStreak:0, snakeBlinded:false,
     // combat internals
     snakeHP:0, snakeMaxHP:0, currentQ:null, pendingMove:null,
     timerInterval:null, timerVal:0, timerMax:10, answering:false
@@ -339,7 +476,110 @@ function startGame(){
   showScreen('storyScreen');
 }
 
-function goToBattle(){ startBattle(); }
+function goToBattle(){ showDungeonGate(); }
+
+// ── COUNTDOWN HELPER ──────────────────────────────────────────────────────────
+function startCountdown(countId, btnId, seconds){
+  const btn=document.getElementById(btnId);
+  if(!btn) return;
+  btn.disabled=true;
+  let t=seconds;
+  const update=()=>{
+    const el=document.getElementById(countId);
+    if(el) el.textContent=t;
+  };
+  update();
+  const iv=setInterval(()=>{
+    t--;
+    update();
+    if(t<=0){
+      clearInterval(iv);
+      btn.disabled=false;
+      const el=document.getElementById(countId);
+      if(el && el.closest('.countdown-line')) el.closest('.countdown-line').innerHTML='<span style="color:#a8e063;font-weight:700;">✅ Ready — go ahead!</span>';
+    }
+  },1000);
+}
+
+// ── DUNGEON GATE ──────────────────────────────────────────────────────────────
+function showDungeonGate(){
+  const s=snake();
+  const tableNum=DUNGEON_TABLES[gs.world-1];
+  let ttHtml='';
+  for(let i=1;i<=12;i++) ttHtml+=`<div class="tt-cell">${tableNum}×${i}=<strong>${tableNum*i}</strong></div>`;
+  document.getElementById('dungeonGateContent').innerHTML=`
+    <div class="wanted-poster">
+      <div class="wanted-title">⚠️ WANTED ⚠️</div>
+      <div style="font-size:2.8rem;margin:6px 0;">${s.bigEmoji}</div>
+      <div class="wanted-snake-name">${s.name}</div>
+      <div style="font-size:0.78rem;margin-bottom:4px;color:#5a1a00;">DANGEROUS — APPROACH WITH CAUTION</div>
+      <hr style="border-color:#8b4513;margin:8px 0;">
+      <div style="font-size:0.8rem;font-weight:700;">Special Attack: ${s.specialName}</div>
+      <div style="font-size:0.75rem;color:#5a3010;margin-bottom:8px;">${s.specialDesc}</div>
+      <hr style="border-color:#8b4513;margin:8px 0;">
+      <div style="font-size:0.8rem;font-weight:700;margin-bottom:6px;">📚 Study the ×${tableNum} times table!</div>
+      <div class="tt-grid">${ttHtml}</div>
+    </div>
+    <div class="countdown-line" id="gateCountdownWrap">
+      Read carefully! <span class="countdown-num" id="gateCountdown">10</span> seconds before you can enter...
+    </div>
+    <button class="btn btn-primary btn-full" id="gateProceedBtn" onclick="startBattle()">I've read it, let me in! 💪</button>`;
+  showScreen('dungeonGateScreen');
+  startCountdown('gateCountdown','gateProceedBtn',10);
+}
+
+// ── RAT LORE PAGE ─────────────────────────────────────────────────────────────
+function showLorePage(){
+  const tableNum=DUNGEON_TABLES[gs.world-1];
+  let loreHtml='';
+  for(let i=1;i<=12;i++){
+    const result=tableNum*i;
+    const count=Math.min(result,7);
+    loreHtml+=`<div class="lore-row">🐀 ${tableNum}×${i}? That's ${result} pizza slices! ${'🍕'.repeat(count)}${result>7?'...':''}</div>`;
+  }
+  document.getElementById('lorePageContent').innerHTML=`
+    <div class="lore-page">
+      <div class="lore-header">📖 Rat's Guide to Defeating Snakes</div>
+      <div class="lore-subtitle">Chapter ${gs.world}: The ×${tableNum} Table 🐀</div>
+      <div style="font-size:0.72rem;color:#8b6914;margin-bottom:10px;font-style:italic;">*found crumpled on the dungeon floor, slightly chewed*</div>
+      ${loreHtml}
+    </div>
+    <div class="countdown-line" id="loreCountdownWrap">
+      Study up! <span class="countdown-num" id="loreCountdown">10</span> seconds before you can continue...
+    </div>
+    <button class="btn btn-primary btn-full" id="loreProceedBtn" onclick="showShop()">Got it! 🐀</button>`;
+  showScreen('lorePageScreen');
+  startCountdown('loreCountdown','loreProceedBtn',10);
+}
+
+// ── SNAKE TAUNT ───────────────────────────────────────────────────────────────
+let tauntCallback=null;
+
+function showTaunt(a,b,answer,callback){
+  const s=snake();
+  const tauntText=s.taunt?s.taunt(a,b,answer):`${a}×${b}=${answer}! Better remember that!`;
+  document.getElementById('tauntModalContent').innerHTML=`
+    <div style="font-size:2.5rem;margin-bottom:6px;">${s.bigEmoji}</div>
+    <div style="font-size:1rem;font-weight:700;color:#ff9a44;margin-bottom:8px;">${s.name} says:</div>
+    <p style="color:#eee;line-height:1.8;margin-bottom:14px;font-style:italic;">"${tauntText}"</p>
+    <div style="background:#1a0a2e;border-radius:12px;padding:14px;margin-bottom:14px;border:2px solid #ffd700;">
+      <div style="color:#bb99ff;font-size:0.78rem;margin-bottom:4px;">The correct answer was:</div>
+      <div style="font-size:2rem;font-weight:900;color:#ffd700;">${a} × ${b} = ${answer}</div>
+    </div>
+    <div class="countdown-line" id="tauntCountdownWrap">
+      Sit with that! <span class="countdown-num" id="tauntCountdown">10</span> seconds before you can continue...
+    </div>
+    <button class="btn btn-secondary" id="tauntDismissBtn" onclick="dismissTaunt()" style="width:100%;margin-top:8px;">Fine, I get it! 😤</button>`;
+  tauntCallback=callback;
+  document.getElementById('tauntModal').classList.add('active');
+  startCountdown('tauntCountdown','tauntDismissBtn',10);
+}
+
+function dismissTaunt(){
+  document.getElementById('tauntModal').classList.remove('active');
+  document.getElementById('questionPanel').classList.remove('active');
+  if(tauntCallback){ tauntCallback(); tauntCallback=null; }
+}
 
 // ── BATTLE ────────────────────────────────────────────────────────────────────
 function snake(){ return SNAKES[gs.world-1]; }
@@ -353,9 +593,16 @@ function startBattle(){
   gs.burrowActive=false; gs.wrongStreak=0; gs.dodgeActive=false;
   gs.stunActive=false; gs.deathFeignSkip=false;
   gs.attackMultiplier=gs.sugarRush?2:1; gs.sugarRush=false;
+  gs.squeakUsed=false;
+  gs.feignCount=0;
+  gs.correctStreak=0; gs.snakeBlinded=false;
+  const fb=document.getElementById('feignBtn');
+  if(fb) fb.innerHTML=`💀 Death Feign<div class="move-desc">Fully heal, but skip next turn (2× per dungeon)</div>`;
   showScreen('battleScreen');
+  updateMovesForWeapon();
   clearLog();
   updateBattleUI();
+  updateSqueakButton();
   logMsg(`⚔️ Dungeon ${gs.world} — ${gs.ratName} faces ${s.name}!`,'info');
   logMsg(`⚠️ Watch out for ${s.specialName}: ${s.specialDesc}`,'info');
   enableMoves(false);
@@ -380,6 +627,8 @@ function updateBattleUI(){
   document.getElementById('enemyHPLabel').textContent=`HP: ${Math.max(0,gs.snakeHP)}/${gs.snakeMaxHP}`;
   document.getElementById('enemyHPBar').style.width=`${Math.max(0,gs.snakeHP/gs.snakeMaxHP*100)}%`;
   document.getElementById('ratNameDisplay').textContent=`🐀 ${gs.ratName}`;
+  const ew=gs.equippedWeapon?WEAPONS.find(w=>w.id===gs.equippedWeapon):null;
+  document.getElementById('weaponDisplay').textContent=ew?`${ew.emoji} ${ew.name} equipped`:'';
   document.getElementById('ratHPLabel').textContent=`HP: ${Math.max(0,gs.ratHP)}/${gs.ratMaxHP}`;
   document.getElementById('ratHPBar').style.width=`${Math.max(0,gs.ratHP/gs.ratMaxHP*100)}%`;
   document.getElementById('pizzaDisplay').textContent=gs.pizza;
@@ -395,6 +644,15 @@ function updateBattleUI(){
 
 function enableMoves(disabled){
   document.querySelectorAll('.move-btn').forEach(b=>b.disabled=disabled);
+  if(gs.squeakUsed){ const sq=document.getElementById('squeakBtn'); if(sq) sq.disabled=true; }
+  if(gs.feignCount>=2){ const fb=document.getElementById('feignBtn'); if(fb) fb.disabled=true; }
+}
+
+function updateFeignButton(){
+  const btn=document.getElementById('feignBtn');
+  if(!btn) return;
+  btn.disabled=true;
+  btn.innerHTML=`💀 Death Feign <span style="color:#888;font-size:0.68rem;">[DONE]</span><div class="move-desc">${gs.ratName} is too tired to play dead again!</div>`;
 }
 
 // ── MOVES ─────────────────────────────────────────────────────────────────────
@@ -421,17 +679,15 @@ function selectMove(move){
       gs.dodgeActive=true;
       logMsg(`💨 ${gs.ratName} prepares to dodge!`,'good');
       snakeTurn(); break;
-    case 'squeak':
-      gs.stunActive=true;
-      logMsg(`📢 ${gs.ratName} lets out a mighty SQUEAK! The snake is stunned!`,'good');
-      snakeTurn(); break;
     case 'whisker':
       gs.whiskerActive=true;
       logMsg(`👃 Whisker Sense activated — the answer will be revealed!`,'good');
-      gs.pendingMove='gnaw'; askQuestion(); break;
+      gs.pendingMove=(gs.equippedWeapon?WEAPONS.find(w=>w.id===gs.equippedWeapon).moves[0].id:'gnaw');
+      askQuestion(); break;
     case 'feign':
-      gs.ratHP=gs.ratMaxHP; gs.deathFeignSkip=true;
+      gs.ratHP=gs.ratMaxHP; gs.deathFeignSkip=true; gs.feignCount++;
       logMsg(`💀 ${gs.ratName} plays dead and fully recovers! Must rest next turn.`,'good');
+      if(gs.feignCount>=2) updateFeignButton();
       updateBattleUI(); snakeTurn(); break;
     default:
       askQuestion();
@@ -533,14 +789,15 @@ function timeUp(){
   document.getElementById('choicesGrid').classList.remove('blurry');
   disableChoices(); revealAnswer();
   setFeedback(`⏰ Time's up! The answer was ${gs.currentQ.answer} — you'll get it next time!`,'#ff9a44');
-  gs.wrongStreak++;
+  gs.wrongStreak++; gs.correctStreak=0;
   logMsg(`⏰ Time's up! Answer was ${gs.currentQ.answer}`,'bad');
+  const timeQ=gs.currentQ, timeMove=gs.pendingMove;
   setTimeout(()=>{
-    document.getElementById('questionPanel').classList.remove('active');
-    if(gs.pendingMove==='burrow'){
-      logMsg(`🕳️ Barry peeks out and bites!`,'bad'); burrowPeekAttack();
-    } else { snakeTurn(); }
-  },2000);
+    showTaunt(timeQ.a,timeQ.b,timeQ.answer,()=>{
+      if(timeMove==='burrow'){ logMsg(`🕳️ Barry peeks out and bites!`,'bad'); burrowPeekAttack(); }
+      else snakeTurn();
+    });
+  },800);
 }
 
 function handleAnswer(val,btn){
@@ -551,7 +808,7 @@ function handleAnswer(val,btn){
   if(val===gs.currentQ.answer){
     btn.classList.add('correct');
     setFeedback(`✅ Correct! Great job, ${gs.ratName}! 🌟`,'#a8e063');
-    gs.wrongStreak=0;
+    gs.wrongStreak=0; gs.correctStreak++;
     setTimeout(()=>{
       document.getElementById('questionPanel').classList.remove('active');
       if(gs.pendingMove==='burrow'){
@@ -563,14 +820,15 @@ function handleAnswer(val,btn){
   } else {
     btn.classList.add('wrong'); revealAnswer();
     setFeedback(`❌ Not quite! The answer was ${gs.currentQ.answer} — keep practising!`,'#ff9a44');
-    gs.wrongStreak++;
+    gs.wrongStreak++; gs.correctStreak=0;
     logMsg(`❌ Wrong! Answer: ${gs.currentQ.answer} — don't worry, you'll get it!`,'bad');
+    const wrongQ=gs.currentQ, wrongMove=gs.pendingMove;
     setTimeout(()=>{
-      document.getElementById('questionPanel').classList.remove('active');
-      if(gs.pendingMove==='burrow'){
-        logMsg(`🕳️ Barry peeks out and bites!`,'bad'); burrowPeekAttack();
-      } else { snakeTurn(); }
-    },2200);
+      showTaunt(wrongQ.a,wrongQ.b,wrongQ.answer,()=>{
+        if(wrongMove==='burrow'){ logMsg(`🕳️ Barry peeks out and bites!`,'bad'); burrowPeekAttack(); }
+        else snakeTurn();
+      });
+    },800);
   }
 }
 
@@ -581,15 +839,60 @@ function setFeedback(msg,color){ const f=document.getElementById('questionFeedba
 // ── RAT ATTACK ────────────────────────────────────────────────────────────────
 function ratDmg(){
   let d=10+Math.floor(Math.random()*6);
-  if(gs.pendingMove==='pack') d=Math.floor(d*1.9);
-  if(gs.attackReduced>0){ d=Math.floor(d*0.6); gs.attackReduced--; }
+  const w=gs.equippedWeapon?WEAPONS.find(w=>w.id===gs.equippedWeapon):null;
+  if(w) d+=w.bonus;
+  const m=gs.pendingMove;
+  // Move-specific modifiers
+  if(m==='pack') d=Math.floor(d*1.9);
+  else if(m==='spoon_scoop') d+=Math.floor(Math.max(0,gs.ratHP-gs.snakeHP)*0.15);
+  else if(m==='clip_strike'&&gs.poisonTurns>0) d=Math.floor(d*1.7);
+  else if(m==='scissor_snip') d=Math.floor(d*1.5);
+  else if(m==='needle_jab') d+=8;
+  else if(m==='thread_whip') d+=gs.correctStreak*5;
+  else if(m==='flashlight_smash') d=Math.floor(d*2.2);
+  else if(m==='pizza_slice'){d=Math.floor(d*1.8);if(gs.correctStreak>=3)d=Math.floor(d*1.4);}
+  // Attack reduction (needle_jab pierces and ignores it)
+  if(m!=='needle_jab'&&gs.attackReduced>0){d=Math.floor(d*0.6);gs.attackReduced--;}
+  else if(m==='needle_jab'&&gs.attackReduced>0) gs.attackReduced--;
   return Math.floor(d*gs.attackMultiplier);
 }
 
+function moveName(m){
+  if(m==='gnaw') return 'Gnaw Attack 🦷';
+  if(m==='pack') return 'Pack Call 🐀🐀🐀';
+  const w=gs.equippedWeapon?WEAPONS.find(w=>w.id===gs.equippedWeapon):null;
+  if(w){const wm=w.moves.find(x=>x.id===m);if(wm)return wm.name;}
+  return 'attacks';
+}
+
 function applyRatAttack(){
-  const d=ratDmg(); gs.snakeHP=Math.max(0,gs.snakeHP-d);
-  const names={gnaw:'Gnaw Attack 🦷',pack:'Pack Call 🐀🐀🐀',whisker:'Gnaw Attack 🦷'};
-  logMsg(`🐀 ${gs.ratName} uses ${names[gs.pendingMove]||'attacks'}! Deals ${d} damage!`,'good');
+  const m=gs.pendingMove;
+  const mn=moveName(m);
+  if(m==='lance_jab'){
+    const base=ratDmg(),h1=Math.floor(base*0.6),h2=Math.floor(base*0.65);
+    gs.snakeHP=Math.max(0,gs.snakeHP-h1-h2);
+    logMsg(`${mn}! Hits TWICE — ${h1} + ${h2} = ${h1+h2} damage!`,'good');
+  } else if(m==='double_cut'){
+    const h1=ratDmg(),h2=Math.floor(h1*1.3);
+    gs.snakeHP=Math.max(0,gs.snakeHP-h1-h2);
+    logMsg(`${mn}! ${h1} then ${h2}! Total: ${h1+h2} damage!`,'good');
+  } else if(m==='royal_spin'){
+    const h=Math.floor(ratDmg()*0.6),total=h*3;
+    gs.snakeHP=Math.max(0,gs.snakeHP-total);
+    logMsg(`${mn}! Three hits — ${h} + ${h} + ${h} = ${total} damage!`,'good');
+  } else if(m==='blind_flash'){
+    const d=ratDmg(); gs.snakeHP=Math.max(0,gs.snakeHP-d); gs.snakeBlinded=true;
+    logMsg(`${mn}! ${d} damage! Snake is blinded — next attack halved! 😵`,'good');
+  } else {
+    const d=ratDmg(); gs.snakeHP=Math.max(0,gs.snakeHP-d);
+    let extra='';
+    if(m==='spoon_scoop'&&gs.ratHP>gs.snakeHP) extra=' (HP advantage bonus! 🥄)';
+    else if(m==='clip_strike'&&gs.poisonTurns>0) extra=' (poison bonus! ☠️)';
+    else if(m==='pizza_slice'&&gs.correctStreak>=3) extra=` (streak x${gs.correctStreak} bonus! 🔥)`;
+    else if(m==='thread_whip'&&gs.correctStreak>0) extra=` (streak x${gs.correctStreak}! 🪡)`;
+    else if(m==='needle_jab') extra=' (pierced defences! 🪡)';
+    logMsg(`🐀 ${gs.ratName} uses ${mn}! Deals ${d} damage!${extra}`,'good');
+  }
   updateBattleUI();
   if(gs.snakeHP<=0) setTimeout(winBattle,700);
   else snakeTurn();
@@ -623,6 +926,7 @@ function snakeTurn(){
     logMsg(`💨 ${gs.ratName} dodges the attack!`,'good');
   } else {
     let d=s.atk+Math.floor(Math.random()*5);
+    if(gs.snakeBlinded){ d=Math.floor(d*0.5); gs.snakeBlinded=false; logMsg(`😵 Snake is blinded! Attack halved!`,'good'); }
     if(gs.cheeseArmor){ d=Math.floor(d*0.7); gs.cheeseArmor=false; logMsg(`🧀 Cheese Armor absorbs some damage!`,'info'); }
     gs.ratHP=Math.max(0,gs.ratHP-d);
     logMsg(`🐍 ${s.name} bites ${gs.ratName} for ${d} damage!`,'bad');
@@ -676,7 +980,7 @@ function winBattle(){
   const earned=3+gs.world; gs.pizza+=earned;
   logMsg(`🎉 ${gs.ratName} defeated ${snake().name}! Earned ${earned} 🍕!`,'good');
   if(gs.world>=10) showVictory();
-  else { gs.world++; showShop(); }
+  else { gs.world++; showLorePage(); }
 }
 
 function gameOver(){
@@ -694,14 +998,41 @@ function retryBattle(){
 function showShop(){
   document.getElementById('shopPizzaDisplay').textContent=gs.pizza;
   const c=document.getElementById('shopItems'); c.innerHTML='';
+
+  // Consumables
+  const t1=document.createElement('div'); t1.className='shop-section-title'; t1.textContent='🛒 Items';
+  c.appendChild(t1);
   SHOP_ITEMS.forEach(item=>{
     const div=document.createElement('div'); div.className='shop-item';
     div.innerHTML=`
       <div><div class="item-name">${item.name}</div><div class="item-desc">${item.desc}</div></div>
-      <button class="shop-buy-btn" id="buy-${item.id}" onclick="buyItem('${item.id}')"
+      <button class="shop-buy-btn" onclick="buyItem('${item.id}')"
         ${gs.pizza<item.cost?'disabled':''}>Buy (${item.cost}🍕)</button>`;
     c.appendChild(div);
   });
+
+  // Weapons
+  const t2=document.createElement('div'); t2.className='shop-section-title'; t2.textContent='⚔️ Weapons (unlock by answering challenges!)';
+  c.appendChild(t2);
+  WEAPONS.forEach(w=>{
+    const owned=gs.ownedWeapons.includes(w.id);
+    const equipped=gs.equippedWeapon===w.id;
+    const div=document.createElement('div');
+    div.className='weapon-item'+(equipped?' equipped':'');
+    div.innerHTML=`
+      <div>
+        <div class="item-name">${w.emoji} ${w.name}</div>
+        <div class="item-desc">${w.desc}</div>
+        <div class="item-desc">${owned?'':'🔒 Answer ${w.unlockCount} challenges to unlock'.replace('${w.unlockCount}',w.unlockCount)}</div>
+        ${equipped?'<div class="equipped-tag">Equipped ✅</div>':''}
+      </div>
+      <div class="weapon-btns">
+        ${!owned?`<button class="shop-buy-btn" onclick="startUnlockChallenge('${w.id}')">🔒 Unlock</button>`:''}
+        ${owned?`<button class="equip-btn${equipped?' active':''}" onclick="equipWeapon('${w.id}')" ${equipped?'disabled':''}>${equipped?'Equipped ✅':'Equip'}</button>`:''}
+      </div>`;
+    c.appendChild(div);
+  });
+
   showScreen('shopScreen');
 }
 
@@ -711,13 +1042,138 @@ function buyItem(id){
   gs.pizza-=item.cost; item.apply(gs); showShop();
 }
 
-function continueFromShop(){ startBattle(); }
+function startUnlockChallenge(weaponId){
+  if(gs.ownedWeapons.includes(weaponId)) return;
+  const w=WEAPONS.find(w=>w.id===weaponId);
+  uc={weaponId, required:w.unlockCount, correct:0, q:null};
+  renderUnlockModal();
+  document.getElementById('unlockModal').classList.add('active');
+}
+
+function makeUnlockQ(){
+  const tables=[7,8];
+  const a=tables[Math.floor(Math.random()*tables.length)];
+  const b=Math.floor(Math.random()*12)+1;
+  const answer=a*b;
+  const wrongs=new Set();
+  while(wrongs.size<3){const off=(Math.floor(Math.random()*5)+1)*(Math.random()<0.5?1:-1);const w=answer+off;if(w>0&&w!==answer)wrongs.add(w);}
+  return {a,b,answer,choices:shuffle([answer,...wrongs])};
+}
+
+function renderUnlockModal(feedback){
+  const w=WEAPONS.find(w=>w.id===uc.weaponId);
+  uc.q=makeUnlockQ();
+  const el=document.getElementById('unlockModalContent');
+  el.innerHTML=`
+    <div style="font-size:2rem;margin-bottom:6px;">${w.emoji}</div>
+    <h2 style="margin-bottom:4px;font-size:1.2rem;">${w.name}</h2>
+    <p style="color:#bb99ff;font-size:0.85rem;margin-bottom:10px;">Answer ${uc.required} challenges from the 7 &amp; 8 times tables to unlock this weapon!</p>
+    <div class="unlock-progress">✅ ${uc.correct} / ${uc.required} correct</div>
+    ${feedback?`<div style="margin-bottom:8px;font-weight:700;font-size:0.88rem;color:${feedback.color}">${feedback.msg}</div>`:''}
+    <div style="font-size:1.5rem;font-weight:900;margin-bottom:10px;">${uc.q.a} × ${uc.q.b} = ?</div>
+    <div class="unlock-choices" id="unlockChoices">
+      ${uc.q.choices.map(v=>`<button class="unlock-choice" onclick="handleUnlockAnswer(${v},this)">${v}</button>`).join('')}
+    </div>
+    <button class="unlock-btn" onclick="cancelUnlock()">✖ Cancel</button>`;
+}
+
+function handleUnlockAnswer(val,btn){
+  document.querySelectorAll('.unlock-choice').forEach(b=>b.disabled=true);
+  if(val===uc.q.answer){
+    btn.classList.add('correct');
+    uc.correct++;
+    if(uc.correct>=uc.required){
+      // Unlock!
+      const w=WEAPONS.find(w=>w.id===uc.weaponId);
+      gs.ownedWeapons.push(uc.weaponId);
+      gs.equippedWeapon=uc.weaponId;
+      document.getElementById('unlockModalContent').innerHTML=`
+        <div style="font-size:3rem;margin-bottom:10px;">🎉</div>
+        <h2 style="color:#ffd700;margin-bottom:10px;">You proved your strength!</h2>
+        <p style="color:#a8e063;font-size:1rem;line-height:1.7;">${w.emoji} <strong>${w.name}</strong> is now yours!</p>
+        <button class="btn btn-primary" style="margin-top:18px;" onclick="closeUnlockModal()">Awesome! ⚔️</button>`;
+      return;
+    }
+    setTimeout(()=>renderUnlockModal({msg:'✅ Correct! Keep going!',color:'#a8e063'}),900);
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.unlock-choice').forEach(b=>{if(+b.textContent===uc.q.answer)b.classList.add('reveal');});
+    setTimeout(()=>renderUnlockModal({msg:`❌ Wrong! The answer was ${uc.q.answer} — try another!`,color:'#ff9a44'}),1500);
+  }
+}
+
+function cancelUnlock(){
+  document.getElementById('unlockModal').classList.remove('active');
+  uc=null;
+}
+
+function closeUnlockModal(){
+  document.getElementById('unlockModal').classList.remove('active');
+  uc=null;
+  showShop();
+}
+
+function equipWeapon(id){
+  if(!gs.ownedWeapons.includes(id)) return;
+  gs.equippedWeapon=id;
+  showShop();
+}
+
+function continueFromShop(){ showDungeonGate(); }
 
 // ── VICTORY ───────────────────────────────────────────────────────────────────
 function showVictory(){
   document.getElementById('victoryMsg').textContent=
     `${gs.ratName} the Rat has conquered all 10 dungeons and discovered the Legendary Hawaiian Sweet Buns! The most delicious treasure in all the world is yours! 🍞✨`;
   showScreen('victoryScreen');
+}
+
+// ── WEAPON MOVESET ────────────────────────────────────────────────────────────
+function updateMovesForWeapon(){
+  const gnawBtn=document.getElementById('gnawBtn');
+  const packBtn=document.getElementById('packBtn');
+  if(!gnawBtn||!packBtn) return;
+  const w=gs.equippedWeapon?WEAPONS.find(w=>w.id===gs.equippedWeapon):null;
+  if(w){
+    const m0=w.moves[0],m1=w.moves[1];
+    gnawBtn.innerHTML=`${m0.name}<div class="move-desc">${m0.desc}</div>`;
+    gnawBtn.onclick=()=>selectMove(m0.id);
+    packBtn.innerHTML=`${m1.name}<div class="move-desc">${m1.desc}</div>`;
+    packBtn.onclick=()=>selectMove(m1.id);
+  } else {
+    gnawBtn.innerHTML=`🦷 Gnaw Attack<div class="move-desc">Basic attack, reliable damage</div>`;
+    gnawBtn.onclick=()=>selectMove('gnaw');
+    packBtn.innerHTML=`🐀🐀🐀 Pack Call<div class="move-desc">Friends deal big bonus damage</div>`;
+    packBtn.onclick=()=>selectMove('pack');
+  }
+}
+
+// ── SQUEAK SCARE (ONE USE) ────────────────────────────────────────────────────
+function selectSqueak(){
+  if(gs.squeakUsed) return;
+  document.getElementById('skipModal').classList.add('active');
+}
+
+function confirmSkip(){
+  document.getElementById('skipModal').classList.remove('active');
+  gs.squeakUsed=true;
+  updateSqueakButton();
+  gs.stunActive=true;
+  logMsg(`📢 ${gs.ratName} lets out a mighty SQUEAK! The snake is stunned!`,'good');
+  snakeTurn();
+}
+
+function cancelSkip(){
+  document.getElementById('skipModal').classList.remove('active');
+}
+
+function updateSqueakButton(){
+  const btn=document.getElementById('squeakBtn');
+  if(!btn) return;
+  if(gs.squeakUsed){
+    btn.disabled=true;
+    btn.innerHTML=`📢 Squeak Scare <span style="color:#888;font-size:0.68rem;">[USED]</span><div class="move-desc">${gs.ratName} already squeaked this dungeon!</div>`;
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────

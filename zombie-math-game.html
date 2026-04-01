@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>🧟 Zombie Math Waves</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#0a0a0f; overflow:hidden; font-family: Arial, sans-serif; }
+canvas { display:block; cursor: crosshair; }
+
+#overlay {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.92); z-index:100; gap:18px;
+}
+#overlay h1 { font-size:44px; color:#ff3333; text-shadow:0 0 30px #ff0000; text-align:center; }
+#overlay p { color:#cccccc; font-size:16px; text-align:center; line-height:2.2; }
+
+.bigbtn {
+  font-size:22px; padding:16px 50px;
+  background:#22aa22; color:#ffffff;
+  border:none; border-radius:14px;
+  cursor:pointer; font-weight:bold;
+  box-shadow: 0 0 20px #22aa22;
+  transition: transform 0.1s;
+}
+.bigbtn:hover { background:#33cc33; transform:scale(1.05); }
+.redbtn { background:#cc2222; box-shadow:0 0 20px #cc2222; }
+.redbtn:hover { background:#ee3333; }
+
+#hud {
+  position:fixed; top:0; left:0; width:100%;
+  background:rgba(0,0,0,0.85);
+  padding:10px 16px;
+  display:flex; justify-content:space-between; align-items:center;
+  z-index:50; color:#ffffff; font-size:15px;
+}
+
+#energyBar { position:fixed; top:52px; left:0; width:100%; height:10px; background:#1a1a1a; z-index:50; }
+#energyFill { height:100%; width:0%; background: linear-gradient(90deg, #ffaa00, #ffff00); transition: width 0.3s; }
+#energyLabel {
+  position:fixed; top:64px; left:50%; transform:translateX(-50%);
+  font-size:11px; color:#ffaa00; z-index:50; font-weight:bold; letter-spacing:1px;
+}
+
+#mathBox {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,20,0.92);
+  display:none; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:20px; z-index:70;
+}
+#mathBox.show { display:flex; }
+#pauseBadge {
+  background:#333300; border:2px solid #aaaa00;
+  color:#ffff44; font-size:14px; font-weight:bold;
+  padding:8px 24px; border-radius:20px; letter-spacing:2px;
+}
+#question { font-size:44px; color:#ffffff; font-weight:bold; text-align:center; }
+#question span { color:#ffff55; }
+#answerRow { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+.ansBtn {
+  font-size:28px; padding:16px 36px;
+  background:#1a1a4a; color:#ffffff;
+  border:2px solid #4444aa; border-radius:12px;
+  cursor:pointer; font-weight:bold; min-width:100px;
+  transition: background 0.15s, transform 0.1s;
+}
+.ansBtn:hover { background:#2a2a8a; transform:scale(1.08); }
+#mathFeedback { font-size:20px; font-weight:bold; min-height:28px; text-align:center; }
+#skipBtn {
+  font-size:15px; padding:10px 28px;
+  background:#2a2a2a; color:#aaaaaa;
+  border:2px solid #555; border-radius:10px;
+  cursor:pointer; font-weight:bold;
+  transition: background 0.15s;
+}
+#skipBtn:hover { background:#3a3a3a; color:#ffffff; }
+#skipBtn:disabled { opacity:0.3; cursor:not-allowed; }
+
+#shopPanel {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.93); z-index:200;
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px;
+}
+#shopPanel.open { display:flex; }
+.shopgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; max-width:560px; width:90%; }
+.sitem {
+  background:#131330; border:2px solid #3a3a7e;
+  border-radius:12px; padding:14px 10px;
+  text-align:center; cursor:pointer;
+  transition: border-color 0.2s, transform 0.1s;
+}
+.sitem:hover { border-color:#7777ff; transform:scale(1.03); }
+.sitem h3 { color:#ffffff; font-size:14px; margin-bottom:4px; }
+.sitem .cost { color:#88ff44; font-size:13px; }
+.sitem .desc { color:#aaaaaa; font-size:11px; margin-top:5px; }
+
+#waveAnn {
+  position:fixed; top:40%; left:50%; transform:translate(-50%,-50%);
+  font-size:46px; font-weight:bold;
+  pointer-events:none; z-index:80;
+  display:none; text-align:center;
+  text-shadow: 0 0 20px currentColor;
+}
+
+#shootHint {
+  position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+  color:#888; font-size:13px; pointer-events:none; z-index:50;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div><span style="color:#ff6666;">HP: </span><span id="hpTxt">❤❤❤❤❤</span></div>
+  <div>
+    <span style="color:#ffaa00;">Wave </span>
+    <span id="waveTxt" style="color:#ffaa00;font-weight:bold;">1</span>
+    <span style="color:#666;">/10</span>
+    &nbsp;&nbsp;
+    <span style="color:#aaa;">Zombies: </span>
+    <span id="zTxt" style="color:#ff6666;font-weight:bold;">0</span>
+  </div>
+  <div>
+    <span style="color:#88ff44;font-weight:bold;">💎 <span id="gemTxt">0</span></span>
+    &nbsp;&nbsp;
+    <button id="shopBtn" style="background:#1a1a66;color:#aaaaff;border:2px solid #4444aa;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;">🛒 Shop</button>
+  </div>
+</div>
+
+<div id="energyBar"><div id="energyFill"></div></div>
+<div id="energyLabel">⚡ ENERGY — Answer math questions to charge!</div>
+<div id="waveAnn"></div>
+<div id="shootHint">🖱️ Click anywhere to shoot!</div>
+
+<div id="mathBox">
+  <div id="pauseBadge">⏸ GAME PAUSED — Take your time!</div>
+  <div style="color:#aaaaff;font-size:16px;">Answer correctly to earn ⚡ energy and blast zombies!</div>
+  <div id="question">What is <span id="q1">?</span> × <span id="q2">?</span> ?</div>
+  <div id="answerRow"></div>
+  <div id="mathFeedback"></div>
+  <button id="skipBtn">⏭️ Skip this question <span id="skipCount">(1 left)</span></button>
+</div>
+
+<div id="overlay">
+  <h1>🧟 ZOMBIE MATH WAVES 🧟</h1>
+  <p>
+    🖱️ <b style="color:#ffff55;">Click anywhere</b> to shoot toward your mouse!<br>
+    Answer <b style="color:#ffff55;">multiplication questions</b> to charge energy ⚡<br>
+    <b style="color:#aaaaff;">Game pauses</b> while you answer — no rush! 😊<br>
+    Full energy = <b style="color:#ff6666;">MEGA BLAST</b> hitting all zombies! 💥<br>
+    Kill zombies → earn <b style="color:#88ff44;">💎 gems</b> → buy weapons!<br>
+    Survive all <b style="color:#ff8800;">10 waves</b> to WIN! 🏆
+  </p>
+  <button class="bigbtn" id="startBtn">▶ START GAME</button>
+</div>
+
+<div id="shopPanel">
+  <div style="font-size:26px;color:#ffffff;font-weight:bold;">🛒 Gem Shop</div>
+  <div style="color:#88ff44;font-size:16px;">💎 You have: <b id="shopGemTxt">0</b> gems</div>
+  <div class="shopgrid" id="shopGrid"></div>
+  <button class="bigbtn" id="closeShopBtn" style="margin-top:12px;font-size:17px;padding:14px 40px;">✅ Done — Next Wave!</button>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+const WEAPONS = [
+  {id:'pistol',   name:'Pistol',          dmg:25,  spd:9,  color:'#ffff55', cost:0,  owned:true,  spread:1, bsize:5, desc:'Click to shoot!'},
+  {id:'shotgun',  name:'Shotgun',         dmg:40,  spd:10, color:'#ff8800', cost:15, owned:false, spread:3, bsize:6, desc:'3 bullets per click!'},
+  {id:'rifle',    name:'Rifle',           dmg:65,  spd:15, color:'#44ffff', cost:30, owned:false, spread:1, bsize:4, desc:'Super fast bullet!'},
+  {id:'rocket',   name:'Rocket Launcher', dmg:140, spd:7,  color:'#ff4444', cost:60, owned:false, spread:1, bsize:9, desc:'Huge explosion!'},
+];
+const SHIELDS = [
+  {id:'s1', name:'Iron Shield',   cost:20, desc:'+1 max heart',  type:'shield', val:1},
+  {id:'s2', name:'Dragon Shield', cost:45, desc:'+2 max hearts', type:'shield', val:2},
+];
+const POTIONS = [
+  {id:'p1', name:'Small Potion', cost:10, desc:'Heal 2 hearts', type:'potion', val:2},
+  {id:'p2', name:'Big Potion',   cost:25, desc:'Heal 4 hearts', type:'potion', val:4},
+];
+
+let G = {};
+let mx = 300, my = 300;
+let paused = false;
+let currentQ = {};
+
+function initG() {
+  G = {
+    state: 'idle',
+    wave: 1, gems: 0, maxhp: 5, hp: 5,
+    px: 0, py: 0,
+    bullets: [], zombies: [], particles: [], gemfx: [],
+    weapon: {...WEAPONS[0]},
+    weapons: WEAPONS.map(w => ({...w})),
+    shields: SHIELDS.map(s => ({...s})),
+    potions: POTIONS.map(p => ({...p})),
+    kills: 0,
+    waveActive: false, spawned: 0, total: 0, spawnT: 0,
+    energy: 0,
+    skipsLeft: 1,
+  };
+  G.px = canvas.width / 2;
+  G.py = canvas.height / 2;
+  paused = false;
+}
+
+function waveCfg(w) {
+  return { count: 4+w*2, hp: 30+w*15, spd: 0.4+w*0.16, reward: 2+w };
+}
+
+function startWave(w) {
+  G.wave = w;
+  const c = waveCfg(w);
+  G.total = c.count; G.spawned = 0;
+  G.bullets = []; G.spawnT = 0; G.waveActive = true;
+  G.energy = 0; G.skipsLeft = 1;
+  updateEnergy();
+  document.getElementById('waveTxt').textContent = w;
+  announce('⚡ WAVE ' + w + (w===10?' — FINAL WAVE!':'!'), w===10?'#ff8800':'#ff3333');
+  updateHUD();
+  setTimeout(askMathQuestion, 5000);
+}
+
+function announce(msg, col) {
+  const el = document.getElementById('waveAnn');
+  el.innerHTML = msg; el.style.color = col||'#ff3333'; el.style.display='block';
+  setTimeout(()=>{ el.style.display='none'; }, 2200);
+}
+
+// ---- SHOOT on click ----
+function shoot(tx, ty) {
+  if (paused || G.state !== 'playing' || !G.waveActive) return;
+  const w = G.weapon;
+  const dx = tx - G.px, dy = ty - G.py;
+  const base = Math.atan2(dy, dx);
+  for (let i = 0; i < w.spread; i++) {
+    const a = w.spread === 1 ? base : base + (i - 1) * 0.18;
+    G.bullets.push({
+      x: G.px, y: G.py,
+      vx: Math.cos(a) * w.spd,
+      vy: Math.sin(a) * w.spd,
+      dmg: w.dmg, col: w.color, sz: w.bsize, blast: false,
+    });
+  }
+}
+
+// ---- MATH ----
+function makeQuestion() {
+  const max = G.wave <= 3 ? 5 : G.wave <= 7 ? 9 : 12;
+  const a = Math.floor(Math.random()*max)+1;
+  const b = Math.floor(Math.random()*max)+1;
+  const correct = a * b;
+  const wrongs = new Set();
+  while (wrongs.size < 3) {
+    const off = (Math.floor(Math.random()*5)+1) * (Math.random()<0.5?1:-1);
+    const w = correct + off;
+    if (w !== correct && w > 0) wrongs.add(w);
+  }
+  const choices = [...wrongs, correct].sort(()=>Math.random()-0.5);
+  return { a, b, correct, choices };
+}
+
+function askMathQuestion() {
+  if (G.state !== 'playing' || !G.waveActive) return;
+  currentQ = makeQuestion();
+  document.getElementById('q1').textContent = currentQ.a;
+  document.getElementById('q2').textContent = currentQ.b;
+  const row = document.getElementById('answerRow');
+  row.innerHTML = '';
+  document.getElementById('mathFeedback').textContent = '';
+  currentQ.choices.forEach(ans => {
+    const btn = document.createElement('button');
+    btn.className = 'ansBtn';
+    btn.textContent = ans;
+    btn.addEventListener('click', () => checkAnswer(ans, btn));
+    row.appendChild(btn);
+  });
+  document.getElementById('mathBox').classList.add('show');
+  const skipBtn = document.getElementById('skipBtn');
+  skipBtn.disabled = G.skipsLeft <= 0;
+  document.getElementById('skipCount').textContent = G.skipsLeft > 0 ? '(1 left)' : '(none left)';
+  paused = true;
+}
+
+function checkAnswer(chosen, btn) {
+  document.querySelectorAll('.ansBtn').forEach(b => b.disabled = true);
+  const fb = document.getElementById('mathFeedback');
+  if (chosen === currentQ.correct) {
+    fb.style.color = '#44ff88';
+    fb.textContent = '✅ Correct! +25 energy! Amazing! 🌟';
+    btn.style.background = '#1a6a1a';
+    btn.style.borderColor = '#44ff88';
+    addEnergy(25);
+    setTimeout(closeAndResume, 1000);
+  } else {
+    fb.style.color = '#ff4444';
+    fb.textContent = '❌ Not quite! ' + currentQ.a + ' × ' + currentQ.b + ' = ' + currentQ.correct + '. You got this! 💪';
+    btn.style.background = '#6a1a1a';
+    btn.style.borderColor = '#ff4444';
+    document.querySelectorAll('.ansBtn').forEach(b => {
+      if (parseInt(b.textContent) === currentQ.correct) {
+        b.style.background = '#1a5a1a'; b.style.borderColor = '#44ff88';
+      }
+    });
+    setTimeout(closeAndResume, 2200);
+  }
+}
+
+function closeAndResume() {
+  document.getElementById('mathBox').classList.remove('show');
+  paused = false;
+  if (G.state === 'playing' && G.waveActive) setTimeout(askMathQuestion, 8000);
+}
+
+document.getElementById('skipBtn').addEventListener('click', () => {
+  if (G.skipsLeft <= 0) return;
+  G.skipsLeft--;
+  document.getElementById('mathFeedback').style.color = '#ffaa00';
+  document.getElementById('mathFeedback').textContent = '⏭️ Question skipped! No skips left for this wave.';
+  document.querySelectorAll('.ansBtn').forEach(b => b.disabled = true);
+  document.getElementById('skipBtn').disabled = true;
+  document.getElementById('skipCount').textContent = '(none left)';
+  setTimeout(closeAndResume, 1200);
+});
+
+function addEnergy(amount) {
+  G.energy = Math.min(100, G.energy + amount);
+  updateEnergy();
+  if (G.energy >= 100) { G.energy = 100; updateEnergy(); setTimeout(blastAllZombies, 300); }
+}
+
+function updateEnergy() {
+  document.getElementById('energyFill').style.width = G.energy + '%';
+}
+
+function blastAllZombies() {
+  if (G.zombies.length === 0) { G.energy = 0; updateEnergy(); return; }
+  announce('💥 ENERGY FULL — MEGA BLAST! 💥', '#ffff00');
+  G.zombies.forEach(z => {
+    const dx = z.x - G.px, dy = z.y - G.py;
+    const dist = Math.hypot(dx,dy)||1;
+    G.bullets.push({ x:G.px, y:G.py, vx:dx/dist*12, vy:dy/dist*12, dmg:G.weapon.dmg*4, col:'#ffff00', sz:10, blast:true });
+  });
+  flashScreen();
+  G.energy = 0; updateEnergy();
+}
+
+function flashScreen() {
+  const f = document.createElement('div');
+  f.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,80,0.4);z-index:999;pointer-events:none;';
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(), 220);
+}
+
+function spawnZombie() {
+  const c = waveCfg(G.wave);
+  const W=canvas.width, H=canvas.height;
+  let x,y;
+  const side=Math.floor(Math.random()*4);
+  if(side===0){x=Math.random()*W;y=-40;}
+  else if(side===1){x=Math.random()*W;y=H+40;}
+  else if(side===2){x=-40;y=Math.random()*H;}
+  else{x=W+40;y=Math.random()*H;}
+  const big=G.wave>=5&&Math.random()<0.25;
+  const hp=big?c.hp*2.5:c.hp;
+  G.zombies.push({x,y,hp,maxhp:hp,spd:big?c.spd*0.65:c.spd,w:big?40:26,h:big?40:26,big,reward:big?c.reward*3:c.reward,wb:Math.random()*6.28});
+}
+
+function explode(x,y,big){
+  const n=big?22:10;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.28,s=Math.random()*(big?6:3)+1;
+    G.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col:big?'#ff8800':'#ff5555',sz:Math.random()*4+2});
+  }
+}
+
+function updateHUD() {
+  const full=Math.max(0,Math.ceil(G.hp)), emp=Math.max(0,G.maxhp-full);
+  document.getElementById('hpTxt').textContent='❤'.repeat(full)+'🖤'.repeat(emp);
+  document.getElementById('gemTxt').textContent=G.gems;
+  const rem=G.zombies.length+Math.max(0,G.total-G.spawned);
+  document.getElementById('zTxt').textContent=Math.max(0,rem);
+}
+
+// ---- LOOP ----
+let last=0;
+function loop(ts){
+  const dt=Math.min((ts-last)/16,3); last=ts;
+  if(G.state==='playing' && !paused) update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  if(!G.waveActive) return;
+
+  G.spawnT+=dt;
+  const si=Math.max(22,80-G.wave*5);
+  if(G.spawnT>=si&&G.spawned<G.total){spawnZombie();G.spawned++;G.spawnT=0;updateHUD();}
+
+  G.bullets=G.bullets.filter(b=>{
+    b.x+=b.vx*dt; b.y+=b.vy*dt;
+    if(b.x<-60||b.x>canvas.width+60||b.y<-60||b.y>canvas.height+60) return false;
+    let hit=false;
+    G.zombies=G.zombies.filter(z=>{
+      if(hit&&!b.blast) return true;
+      if(Math.abs(b.x-z.x)<z.w/2+b.sz&&Math.abs(b.y-z.y)<z.h/2+b.sz){
+        z.hp-=b.dmg; hit=true; explode(z.x,z.y,false);
+        if(z.hp<=0){
+          G.gems+=z.reward; G.kills++;
+          explode(z.x,z.y,z.big);
+          G.gemfx.push({x:z.x,y:z.y,life:1});
+          updateHUD(); return false;
+        }
+      }
+      return true;
+    });
+    return !hit;
+  });
+  G.zombies=G.zombies.filter(z=>z.hp>0);
+
+  G.zombies.forEach(z=>{
+    z.wb+=0.1*dt;
+    const dx=G.px-z.x,dy=G.py-z.y,d=Math.hypot(dx,dy)||1;
+    z.x+=dx/d*z.spd*dt; z.y+=dy/d*z.spd*dt;
+    if(Math.abs(dx)<z.w/2+14&&Math.abs(dy)<z.h/2+14){
+      G.hp-=0.03*dt;
+      if(G.hp<=0){G.hp=0;endGame(false);}
+      updateHUD();
+    }
+  });
+
+  G.particles=G.particles.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=0.04*dt;return p.life>0;});
+  G.gemfx=G.gemfx.filter(g=>{g.y-=1.5*dt;g.life-=0.025*dt;return g.life>0;});
+
+  if(G.zombies.length===0&&G.spawned>=G.total){
+    G.waveActive=false; paused=false; updateHUD();
+    document.getElementById('mathBox').classList.remove('show');
+    if(G.wave>=10){setTimeout(()=>endGame(true),700);return;}
+    announce('Wave '+G.wave+' cleared! 🏆 Opening shop...','#44ff88');
+    setTimeout(()=>openShop(),2000);
+  }
+}
+
+// ---- CARTOON DRAWING HELPERS ----
+function outline(col, width){ ctx.strokeStyle=col; ctx.lineWidth=width; ctx.stroke(); }
+
+function drawZombie(z) {
+  const s = paused ? 0 : Math.sin(z.wb) * 3;
+  const sc = z.big ? 1.6 : 1.0;
+  ctx.save(); ctx.translate(z.x, z.y + s); ctx.scale(sc, sc);
+
+  // Shadow
+  ctx.save(); ctx.globalAlpha=0.18;
+  ctx.fillStyle='#000'; ctx.beginPath();
+  ctx.ellipse(0, 18, 16, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Body — rounded rectangle
+  ctx.fillStyle = z.big ? '#7a4a10' : '#3a8a20';
+  ctx.beginPath(); ctx.roundRect(-13, -6, 26, 22, 7); ctx.fill();
+  outline('#000', 2.5);
+
+  // Head
+  ctx.fillStyle = z.big ? '#8a5a18' : '#4aaa28';
+  ctx.beginPath(); ctx.ellipse(0, -14, 13, 12, 0, 0, Math.PI*2); ctx.fill();
+  outline('#000', 2.5);
+
+  // Messy hair
+  ctx.fillStyle = z.big ? '#3a1a00' : '#1a4400';
+  for(let i=-10;i<=10;i+=5){
+    ctx.beginPath(); ctx.ellipse(i,-24+Math.sin(i)*2,3.5,5,i*0.1,0,Math.PI*2); ctx.fill();
+  }
+
+  // Eyes — big cartoon eyes
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.ellipse(-5,-15,5,5,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(5,-15,5,5,0,0,Math.PI*2); ctx.fill();
+  outline('#000', 1.5);
+  // Pupils
+  ctx.fillStyle='#ff0000';
+  ctx.beginPath(); ctx.ellipse(-5,-15,2.5,3,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(5,-15,2.5,3,0,0,Math.PI*2); ctx.fill();
+  // Eye shine
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-4,-14,1,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(6,-14,1,0,Math.PI*2); ctx.fill();
+
+  // Jagged mouth
+  ctx.fillStyle='#1a0000';
+  ctx.beginPath(); ctx.moveTo(-6,-7); ctx.lineTo(-4,-5); ctx.lineTo(-2,-7);
+  ctx.lineTo(0,-5); ctx.lineTo(2,-7); ctx.lineTo(4,-5); ctx.lineTo(6,-7);
+  ctx.lineTo(6,-4); ctx.lineTo(-6,-4); ctx.closePath(); ctx.fill();
+  outline('#000',1);
+
+  // Arms
+  ctx.strokeStyle='#000'; ctx.lineWidth=2.5;
+  ctx.fillStyle = z.big ? '#7a4a10' : '#3a8a20';
+  // left arm
+  ctx.beginPath(); ctx.ellipse(-18, 2, 5, 9, -0.3, 0, Math.PI*2); ctx.fill(); outline('#000',2);
+  // right arm  
+  ctx.beginPath(); ctx.ellipse(18, 2, 5, 9, 0.3, 0, Math.PI*2); ctx.fill(); outline('#000',2);
+
+  // Legs
+  ctx.fillStyle = z.big ? '#5a3008' : '#2a6a10';
+  ctx.beginPath(); ctx.ellipse(-6, 22, 5, 8, -0.1, 0, Math.PI*2); ctx.fill(); outline('#000',2);
+  ctx.beginPath(); ctx.ellipse(6, 22, 5, 8, 0.1, 0, Math.PI*2); ctx.fill(); outline('#000',2);
+
+  // BOSS crown
+  if(z.big){
+    ctx.fillStyle='#ffcc00';
+    ctx.beginPath();
+    ctx.moveTo(-10,-28); ctx.lineTo(-10,-34); ctx.lineTo(-6,-30);
+    ctx.lineTo(0,-36); ctx.lineTo(6,-30); ctx.lineTo(10,-34);
+    ctx.lineTo(10,-28); ctx.closePath(); ctx.fill(); outline('#aa8800',2);
+    ctx.fillStyle='#fff'; ctx.font='bold 8px Arial'; ctx.textAlign='center';
+    ctx.fillText('BOSS', 0, 36);
+  }
+
+  // HP bar
+  const hf=z.hp/z.maxhp, bw=28;
+  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.roundRect(-bw/2,-30,bw,6,3); ctx.fill();
+  ctx.fillStyle=hf>0.5?'#44ff44':hf>0.25?'#ffaa00':'#ff2222';
+  ctx.beginPath(); ctx.roundRect(-bw/2,-30,bw*hf,6,3); ctx.fill();
+  ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(-bw/2,-30,bw,6,3); ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawPlayer() {
+  const angle = Math.atan2(my - G.py, mx - G.px);
+  ctx.save(); ctx.translate(G.px, G.py);
+
+  // Shadow
+  ctx.save(); ctx.globalAlpha=0.2;
+  ctx.fillStyle='#000'; ctx.beginPath();
+  ctx.ellipse(0, 20, 14, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Legs
+  ctx.fillStyle='#1a3aff';
+  ctx.beginPath(); ctx.ellipse(-6, 14, 5, 8, -0.1, 0, Math.PI*2); ctx.fill(); outline('#000',2);
+  ctx.beginPath(); ctx.ellipse(6, 14, 5, 8, 0.1, 0, Math.PI*2); ctx.fill(); outline('#000',2);
+
+  // Body
+  ctx.fillStyle='#2255ee';
+  ctx.beginPath(); ctx.roundRect(-12, -2, 24, 18, 6); ctx.fill(); outline('#000',2.5);
+
+  // Gun arm — rotates toward mouse
+  ctx.save(); ctx.rotate(angle);
+  const wc = G.weapon ? G.weapon.color : '#ffff55';
+  // arm
+  ctx.fillStyle='#3366ff';
+  ctx.beginPath(); ctx.ellipse(12, 0, 10, 5, 0, 0, Math.PI*2); ctx.fill(); outline('#000',2);
+  // gun barrel
+  ctx.fillStyle='#555';
+  ctx.beginPath(); ctx.roundRect(8, -3, 18, 6, 3); ctx.fill(); outline('#000',2);
+  // muzzle flash colour strip
+  ctx.fillStyle=wc;
+  ctx.beginPath(); ctx.roundRect(22, -2, 6, 4, 2); ctx.fill();
+  ctx.restore();
+
+  // Head — big cartoon circle
+  ctx.fillStyle='#ffcc99';
+  ctx.beginPath(); ctx.ellipse(0, -12, 13, 12, 0, 0, Math.PI*2); ctx.fill(); outline('#000',2.5);
+
+  // Hair
+  ctx.fillStyle='#884400';
+  ctx.beginPath(); ctx.ellipse(0, -22, 12, 7, 0, 0, Math.PI*2); ctx.fill(); outline('#000',2);
+
+  // Eyes
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.ellipse(-4,-13,4,4,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(4,-13,4,4,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#222';
+  ctx.beginPath(); ctx.ellipse(-4,-13,2,2.5,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(4,-13,2,2.5,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-3,-12,0.9,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(5,-12,0.9,0,Math.PI*2); ctx.fill();
+
+  // Smile
+  ctx.strokeStyle='#882200'; ctx.lineWidth=2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.arc(0,-9,4,0.2,Math.PI-0.2); ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawBullet(b) {
+  ctx.save();
+  if(b.blast){
+    // glowing star burst for mega blast
+    ctx.shadowBlur=20; ctx.shadowColor='#ffff00';
+    ctx.fillStyle='#ffff44';
+    ctx.beginPath(); ctx.arc(b.x,b.y,b.sz,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(b.x,b.y,b.sz*0.4,0,Math.PI*2); ctx.fill();
+  } else {
+    // cartoon bullet with white shine
+    ctx.fillStyle=b.col;
+    ctx.beginPath(); ctx.ellipse(b.x,b.y,b.sz*1.6,b.sz,Math.atan2(b.vy,b.vx),0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.ellipse(b.x-b.sz*0.3,b.y-b.sz*0.3,b.sz*0.5,b.sz*0.3,Math.atan2(b.vy,b.vx),0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ---- DRAW ----
+function draw(){
+  const W=canvas.width,H=canvas.height;
+
+  // Sky gradient background
+  ctx.fillStyle='#1a0a2e'; ctx.fillRect(0,0,W,H);
+
+  // Ground
+  ctx.fillStyle='#0d1f0d';
+  ctx.fillRect(0, H*0.75, W, H*0.25);
+  // Ground line
+  ctx.strokeStyle='#1a3a1a'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,H*0.75); ctx.lineTo(W,H*0.75); ctx.stroke();
+
+  // Subtle grid on ground only
+  ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,H*0.75);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=H*0.75;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Particles
+  G.particles.forEach(p=>{
+    ctx.save(); ctx.globalAlpha=p.life;
+    // cartoon poof circles
+    ctx.fillStyle=p.col;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.sz*1.5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.restore();
+  });
+
+  // Zombies
+  G.zombies.forEach(z => drawZombie(z));
+
+  // Bullets
+  G.bullets.forEach(b => drawBullet(b));
+
+  // Gem FX
+  G.gemfx.forEach(g=>{
+    ctx.save(); ctx.globalAlpha=g.life;
+    ctx.font='bold 18px Arial'; ctx.textAlign='center';
+    ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.strokeText('+💎',g.x,g.y);
+    ctx.fillStyle='#88ff44'; ctx.fillText('+💎',g.x,g.y);
+    ctx.restore();
+  });
+
+  // Player
+  drawPlayer();
+}
+
+// ---- SHOP ----
+function buildShop(){
+  document.getElementById('shopGemTxt').textContent=G.gems;
+  const grid=document.getElementById('shopGrid'); grid.innerHTML='';
+  [...G.weapons,...G.shields,...G.potions].forEach(item=>{
+    const div=document.createElement('div'); div.className='sitem';
+    const canBuy=G.gems>=item.cost;
+    const isEq=item.id&&G.weapon&&item.id===G.weapon.id;
+    let extra='';
+    if(item.owned&&!item.type) extra=`<div style="color:#44ff88;font-size:11px;margin-top:4px;">${isEq?'✓ Equipped':'Owned — click to equip'}</div>`;
+    div.innerHTML=`<h3>${item.name}</h3><div class="cost">💎 ${item.cost}</div><div class="desc">${item.desc}</div>${extra}`;
+    if(!canBuy&&!item.owned) div.style.opacity='0.4';
+    div.addEventListener('click',()=>{doBuy(item);buildShop();});
+    grid.appendChild(div);
+  });
+}
+
+function doBuy(item){
+  if(item.type==='shield'){if(G.gems<item.cost)return;G.gems-=item.cost;G.maxhp+=item.val;G.hp=Math.min(G.hp+item.val,G.maxhp);}
+  else if(item.type==='potion'){if(G.gems<item.cost)return;G.gems-=item.cost;G.hp=Math.min(G.hp+item.val,G.maxhp);}
+  else{if(item.owned){G.weapon=item;}else{if(G.gems<item.cost)return;G.gems-=item.cost;item.owned=true;G.weapon=item;}}
+  updateHUD();
+}
+
+function openShop(){
+  paused=true; buildShop();
+  document.getElementById('shopPanel').classList.add('open');
+}
+
+document.getElementById('closeShopBtn').addEventListener('click',()=>{
+  document.getElementById('shopPanel').classList.remove('open');
+  paused=false;
+  if(!G.waveActive&&G.state==='playing') setTimeout(()=>startWave(G.wave+1),500);
+});
+document.getElementById('shopBtn').addEventListener('click',()=>{if(G.state==='playing')openShop();});
+
+function endGame(win){
+  G.state=win?'win':'over'; paused=true;
+  document.getElementById('mathBox').classList.remove('show');
+  const el=document.getElementById('overlay'); el.style.display='flex';
+  if(win){
+    el.innerHTML=`<h1 style="color:#44ff88;text-shadow:0 0 30px #44ff88;">🏆 YOU WIN! 🏆</h1>
+    <p>You survived ALL 10 zombie waves!<br>You are amazing at multiplication AND zombie slaying!<br><br>
+    Zombies killed: <b style="color:#ff6666;">${G.kills}</b> &nbsp; Gems earned: <b style="color:#88ff44;">${G.gems} 💎</b></p>
+    <button class="bigbtn" onclick="restart()">🔄 Play Again</button>`;
+  } else {
+    el.innerHTML=`<h1>💀 YOU DIED! 💀</h1>
+    <p>Wave reached: <b style="color:#ffaa00;">${G.wave}/10</b><br>
+    Zombies killed: <b style="color:#ff6666;">${G.kills}</b><br>
+    Gems collected: <b style="color:#88ff44;">${G.gems} 💎</b><br><br>
+    Keep practicing those times tables and try again!</p>
+    <button class="bigbtn redbtn" onclick="restart()">🔄 Try Again</button>`;
+  }
+}
+
+function restart(){
+  initG();
+  document.getElementById('overlay').style.display='none';
+  G.state='playing'; startWave(1);
+}
+
+// Mouse move — track position
+window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+// Click on canvas = shoot
+canvas.addEventListener('click', e => {
+  if (paused || G.state !== 'playing') return;
+  shoot(e.clientX, e.clientY);
+});
+
+document.getElementById('startBtn').addEventListener('click',()=>{
+  document.getElementById('overlay').style.display='none';
+  initG(); G.state='playing'; startWave(1);
+});
+
+initG();
+requestAnimationFrame(t=>{last=t;requestAnimationFrame(loop);});
+</script>
+</body>
+</html>
